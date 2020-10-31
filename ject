@@ -1,0 +1,136 @@
+# Aiko was here, improvising bash.
+
+# -e means 'Exit immediately if a command exits with a non-zero status.'
+set -e
+
+# This sets our port to look for the creaturesengine
+PORT=`cat ~/.creaturesengine/port`
+
+#set the scripts array initially empty
+scripts=();
+cnt=0
+PARM=7
+
+# Here's the inject function:
+	ject () {
+		echo "$1"
+		echo
+		echo -n "$1"$'\r\nrscr\r\n' | nc localhost $PORT
+		echo
+	}
+	
+# Split up the scripts
+	split-script () {
+		delimiter=$'\n'scrp
+		s=$1$delimiter
+		while [[ $s ]]; do
+			scripts+=( "${s%%"$delimiter"*}" );
+			s=${s#*"$delimiter"};
+		done;
+		
+		cnt=${#scripts[@]}
+
+		#Now we need to add 'scrp' back to the begining of the scrps??
+		# (but only if there's more than one... and not to the install)
+		# (also: only if PARM actually is telling us to inject them)
+		if [ $cnt -gt 1 ] && [ $(($PARM&2)) == 2 ]
+			then
+			#echo 'parsing scripts'
+			for ((i=1;i<cnt;i++)); do
+				scripts[i]="$delimiter${scripts[i]}"
+				echo "${scripts[i]}"
+			done
+		fi
+		
+		#This line is just to outs the scripts
+		#declare -p scripts
+	}
+
+#This reads in the cosfile while stripping out all the comments
+cosfile=`sed -e '/^*/d' "$1"`
+#echo $cosfile
+
+# Split the string into before and after rscr
+# Note that this is case-sensitive. If your rscr is upper case... problems.
+
+delimiter=$'\n'rscr
+s=$cosfile$delimiter
+array=();
+while [[ $s ]]; do
+    array+=( "${s%%"$delimiter"*}" );
+    s=${s#*"$delimiter"};
+done;
+# declare -p array
+
+# Check your parameter. If if doesn't exist, it's already assigned to 7
+if [ $2 > 0 ]
+	then
+	PARM=$2
+fi
+
+# Some friendly translating of other parms should happen here
+#(r = 1, s = 4, etc...)
+
+#Here we parse the parameter which is gonna be similar to ject.
+# so it has to do bitwise stuff. I always forget how bitwise
+# stuff works.
+
+#echo "parameter is"
+#echo $PARM
+#Check if you're removing first
+if [ $(($PARM&1)) == 1 ]
+then
+	echo "remove script requested:"
+	ject "${array[1]}"
+fi
+
+#Then check if you're injecting scripts
+if [ $(($PARM&2)) == 2 ]
+then
+	echo "event scripts requested:"
+	split-script "${array[0]}"
+	#script inject here
+	for ((i=1;i<cnt;i++)); do
+		#These have to be injected ~special~ via the CAOS command
+		ex1='outs caos 0 0 0 0 "'
+		ex3='" 1 0 va00 doif type va00 eq 2 outs va00 endi'
+		
+		# This is way too many seds but I barely know what they do
+		# And everytime I combine them, or try, it doesn't work
+		# Maybe someone more skilled can do it
+		# But it does need to strip out the spaces/tabs and escape things
+		ex2=$(echo "${scripts[i]}" | sed -e 's/\"/\\\"/g' | sed ':a;N;$!ba;s/\n/ /g' | sed -e "s/[[:space:]]\+/ /g")
+		
+		#This strips out the random whitespaces those seds probably put in
+		ex2=$(echo $ex2)
+		
+		#Again, if you're skilled enough to clean this up, please do ;;
+
+		toject=$ex1$ex2$ex3
+		ject "$toject"
+		
+		#An example script that works
+		#ject 'outs caos 0 0 0 0 "scrp 1 800 1 1000 targ norn doif targ ne null sezz \"scrap 1000 is REAL\" endi endm" 1 0 va00 doif type va00 eq 2 outs va00 endi'
+		
+	done
+	
+fi
+
+# Finally, the install script
+if [  $(($PARM&4)) == 4  ]
+then
+	echo "install script requested:"
+	# Check to see if the script is already split (it will be if you injected
+	# scripts first) 
+	if [ $cnt == 0 ] 
+		then
+		# echo "Haven't Parsed Yet"
+		split-script "${array[0]}"
+	fi
+	ject "${scripts[0]}"
+fi
+
+echo "done"
+
+#This is terrible. I should have written this in python
+#or literally anything else.
