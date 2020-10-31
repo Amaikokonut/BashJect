@@ -99,7 +99,7 @@ then
 		# And everytime I combine them, or try, it doesn't work
 		# Maybe someone more skilled can do it
 		# But it does need to strip out the spaces/tabs and escape things
-		ex2=$(echo "${scripts[i]}" | sed -e 's/\"/\\\"/g' | sed ':a;N;$!ba;s/\n/ /g' | sed -e "s/[[:space:]]\+/ /g")
+		ex2=$(echo "${scripts[i]}" |  sed -e 's/\[/\\\[/g' |  sed -e 's/\]/\\\]/g' | sed -e 's/\"/\\\"/g' | sed ':a;N;$!ba;s/\n/ /g' | sed -e "s/[[:space:]]\+/ /g")
 		
 		#This strips out the random whitespaces those seds probably put in
 		ex2=$(echo $ex2)
