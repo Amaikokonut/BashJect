@@ -1,3 +1,4 @@
+#! /bin/bash
 # Aiko was here, improvising bash.
 
 # -e means 'Exit immediately if a command exits with a non-zero status.'
@@ -37,7 +38,7 @@ PARM=7
 			then
 			#echo 'parsing scripts'
 			for ((i=1;i<cnt;i++)); do
-				scripts[i]="$delimiter${scripts[i]}"
+				scripts[i]=$'\r\ntarg null\r\n'"$delimiter${scripts[i]}"$'\r\ntarg null\r\n'
 				echo "${scripts[i]}"
 			done
 		fi
@@ -90,28 +91,11 @@ then
 	echo "event scripts requested:"
 	split-script "${array[0]}"
 	#script inject here
+	
 	for ((i=1;i<cnt;i++)); do
-		#These have to be injected ~special~ via the CAOS command
-		ex1='outs caos 0 0 0 0 "'
-		ex3='" 1 0 va00 doif type va00 eq 2 outs va00 endi'
-		
-		# This is way too many seds but I barely know what they do
-		# And everytime I combine them, or try, it doesn't work
-		# Maybe someone more skilled can do it
-		# But it does need to strip out the spaces/tabs and escape things
-		ex2=$(echo "${scripts[i]}" |  sed -e 's/\[/\\\[/g' |  sed -e 's/\]/\\\]/g' | sed -e 's/\"/\\\"/g' | sed ':a;N;$!ba;s/\n/ /g' | sed -e "s/[[:space:]]\+/ /g")
-		
-		#This strips out the random whitespaces those seds probably put in
-		ex2=$(echo $ex2)
-		
-		#Again, if you're skilled enough to clean this up, please do ;;
+		echo "${scripts[i]}"
+		ject "${scripts[i]}"
 
-		toject=$ex1$ex2$ex3
-		ject "$toject"
-		
-		#An example script that works
-		#ject 'outs caos 0 0 0 0 "scrp 1 800 1 1000 targ norn doif targ ne null sezz \"scrap 1000 is REAL\" endi endm" 1 0 va00 doif type va00 eq 2 outs va00 endi'
-		
 	done
 	
 fi
